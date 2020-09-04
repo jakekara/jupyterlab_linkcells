@@ -30,7 +30,8 @@
     "eslint": "eslint . --ext .ts,.tsx --fix",
     "eslint:check": "eslint . --ext .ts,.tsx",
     "prepare": "jlpm run clean && jlpm run build",
-    "watch": "tsc -w"
+    "watch": "tsc -w",
+    "prettify": "prettier --write src/**.ts"
   },
   "dependencies": {
     "@jupyterlab/application": "^2.0.0",
