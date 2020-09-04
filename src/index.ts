@@ -10,38 +10,99 @@ import {
   INotebookTracker
 } from '@jupyterlab/notebook';
 
-import {
-  Cell
-} from '@jupyterlab/cells';
+import { Cell } from '@jupyterlab/cells';
 
-const CELL_ID_KEY = "cell-id";
+import gensym from './gensym';
+import { manageCellIDs } from './cellID';
+
+const CELL_ID_KEY = 'cell-id';
+const NEXT_CELL_KEY = 'next-cell';
 const DEBUG_ID = 'prompt-button';
 
-function debugLog(...args: any[]) {
+function debugLog(...args: any[]): void {
   console.log(DEBUG_ID, ...args);
 }
 
-const getCellID = (cell: Cell) => cell.model.metadata.get(CELL_ID_KEY);
-const setCellID = (cell: Cell) => cell.model.metadata.set(CELL_ID_KEY, "dummy-id");
+function initializeMetadataValue(
+  cell: Cell,
+  key: string,
+  defaultValue: any
+): any {
+  const currentValue = cell.model.metadata.get(key);
+  if (currentValue === undefined) {
+    cell.model.metadata.set(key, defaultValue);
+    debugLog(`Set ${key} to ${defaultValue}`);
+  } else {
+    debugLog(`Got ${key}: ${currentValue}`);
+  }
+
+  return cell.model.metadata.get(key);
+}
+
+function linkCellToNext(tracker: INotebookTracker): void {
+  debugLog('Linking cell to next', tracker);
+  const currentCell = tracker.activeCell;
+  let atCurrentCell = false;
+  let done = false;
+  tracker.currentWidget.content.widgets.forEach(w => {
+    if (done) {
+      return;
+    }
+    if (!(w instanceof Cell)) {
+      debugLog('LinkCellToNext Error: Expected widget would be a cell');
+    } else {
+      if (w === currentCell) {
+        atCurrentCell = true;
+      } else if (atCurrentCell) {
+        currentCell.model.metadata.set(
+          NEXT_CELL_KEY,
+          w.model.metadata.get(CELL_ID_KEY)
+        );
+        atCurrentCell = false;
+        done = true;
+      }
+    }
+  });
+}
+
+/**
+ * Make sure cell has a button
+ * @param cell
+ */
+function initializeButton(cell: Cell, tracker: INotebookTracker): Element {
+
+  manageCellIDs(tracker);
+
+  if (cell.promptNode.getElementsByClassName('link-button').length === 0) {
+    const button = cell.promptNode.appendChild(
+      document.createElement('button')
+    );
+    button.className = 'bp3-button bp3-minimal jp-Button minimal link-button';
+    button.value = 'Link';
+    button.onclick = (): void => {
+      linkCellToNext(tracker);
+    };
+    debugLog('Added button', button);
+    return button;
+  } else {
+    return cell.promptNode.getElementsByClassName('link-button')[0];
+  }
+}
 
 /**
  * Make sure a cell has required metadata
- * @param tracker 
+ * @param cell
  */
-const processCell = (cell: Cell) => {
+const processCell = (cell: Cell, tracker: INotebookTracker) => {
   // Add "cell-id" if none exists
-  if (!getCellID(cell)) {
-    setCellID(cell);
-    debugLog("Set cell id...", getCellID(cell))
-  } else {
-    debugLog("Read cell id...", getCellID(cell))
-  }
+  initializeMetadataValue(cell, CELL_ID_KEY, gensym());
 
   // Add "next-cell" if none exists
+  initializeMetadataValue(cell, NEXT_CELL_KEY, null);
 
   // Add button if none exists
-
-}
+  initializeButton(cell, tracker);
+};
 
 const processCells = (tracker: INotebookTracker) => {
   debugLog('Processing cells', tracker);
@@ -50,13 +111,13 @@ const processCells = (tracker: INotebookTracker) => {
     console.log('currentChanged', tracker.currentWidget.content.widgets);
     tracker.currentWidget.content.widgets.forEach(w => {
       if (w instanceof Cell) {
-        processCell(w);
+        processCell(w, tracker);
       } else {
-        debugLog('Well, this is unexpected. Widget is not Cell!');
+        debugLog('Well, this is unexpected. Widget is not a Cell!');
         debugLog(w);
       }
     });
-  }
+  };
 
   tracker.currentChanged.connect(update);
   tracker.activeCellChanged.connect(update);
