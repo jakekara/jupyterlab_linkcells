@@ -4,9 +4,9 @@ import {
 } from '@jupyterlab/application';
 
 import {
-  // NotebookActions, 
+  // NotebookActions,
   // NotebookPanel,
-  // INotebookModel, 
+  // INotebookModel,
   INotebookTracker
 } from '@jupyterlab/notebook';
 
@@ -70,7 +70,6 @@ function linkCellToNext(tracker: INotebookTracker): void {
  * @param cell
  */
 function initializeButton(cell: Cell, tracker: INotebookTracker): Element {
-
   manageCellIDs(tracker);
 
   if (cell.promptNode.getElementsByClassName('link-button').length === 0) {
