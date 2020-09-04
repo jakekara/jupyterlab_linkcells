@@ -1,6 +1,6 @@
 # prompt-button
 
-![Github Actions Status](https://github.com/jakekara/prompt-button/workflows/Build/badge.svg)
+![Github Actions Status](https://github.com/jakekara/jupyterlab_linkcells/workflows/Build/badge.svg)
 
 add a button to the prompt area of a cell
 
